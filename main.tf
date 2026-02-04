@@ -16,10 +16,28 @@ data "aws_ami" "al2023" {
 
 data "aws_ami" "debian_12" {
   most_recent = true
-  owners      = ["136693071363"] # Debian Official
+  owners      = ["136693071363"]
   filter {
     name   = "name"
     values = ["debian-12-amd64-*"]
+  }
+}
+
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"]
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+  }
+}
+
+data "aws_ami" "arch" {
+  most_recent = true
+  owners      = ["647457786197"]
+  filter {
+    name   = "name"
+    values = ["arch-linux-std-hvm-*.x86_64-ebs"]
   }
 }
 
@@ -54,6 +72,8 @@ resource "aws_instance" "ansible_control" {
     inventory_content = templatefile("${path.module}/inventory.ini", {
       al2023_ip = aws_instance.al2023_managed_node.private_ip
       debian_ip = aws_instance.debian_managed_node.private_ip
+      ubuntu_ip = aws_instance.ubuntu_managed_node.private_ip
+      arch_ip   = aws_instance.arch_managed_node.private_ip
     }),
     private_key_pem = tls_private_key.key.private_key_pem
   })
@@ -79,4 +99,30 @@ resource "aws_instance" "debian_managed_node" {
   vpc_security_group_ids = [aws_security_group.sg_managed.id]
   iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
   tags = { Name = "${var.project_name}-Debian-Managed" }
+}
+
+resource "aws_instance" "ubuntu_managed_node" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type
+  key_name               = aws_key_pair.generated_key.key_name
+  subnet_id              = aws_subnet.private_subnet.id
+  vpc_security_group_ids = [aws_security_group.sg_managed.id]
+  iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
+  tags = { Name = "${var.project_name}-Ubuntu-Managed" }
+}
+
+resource "aws_instance" "arch_managed_node" {
+  ami                    = data.aws_ami.arch.id
+  instance_type          = var.instance_type
+  key_name               = aws_key_pair.generated_key.key_name
+  subnet_id              = aws_subnet.private_subnet.id
+  vpc_security_group_ids = [aws_security_group.sg_managed.id]
+  iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
+
+  user_data = <<-EOF
+              #!/bin/env bash
+              pacman -Sy --noconfirm python
+              EOF
+
+  tags = { Name = "${var.project_name}-Arch-Managed" }
 }

@@ -7,7 +7,7 @@ variable "aws_region" {
 }
 
 variable "aws_profile" {
-  description = "AWS profile to use for authentication (e.g., 'stamper')."
+  description = "The AWS profile to use for authentication."
   type        = string
   default     = ""
 }

@@ -76,6 +76,7 @@ resource "aws_instance" "ansible_control" {
       arch_ip   = aws_instance.arch_managed_node.private_ip
     }),
     private_key_pem = tls_private_key.key.private_key_pem
+    ansible_configuration = file("${path.module}/ansible.cfg")
   })
 
   tags = { Name = "${var.project_name}-Control" }

@@ -18,12 +18,6 @@ variable "instance_type" {
   default     = "t3.micro"
 }
 
-variable "key_pair_name" {
-  description = "The name of the SSH key pair created in AWS."
-  type        = string
-  default     = "ansible-lab-key"
-}
-
 variable "project_name" {
   description = "Project name tag prefix for resources."
   type        = string

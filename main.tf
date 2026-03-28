@@ -1,5 +1,15 @@
 #main.tf
 
+terraform {
+  backend "s3" {
+    bucket         = "ansible-linux-sandbox-terraform-state"
+    key            = "ansible-sandbox/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-state-locking"
+    encrypt        = true
+  }
+}
+
 provider "aws" {
   region  = var.aws_region
   profile = var.aws_profile
@@ -41,6 +51,10 @@ data "aws_ami" "arch" {
   }
 }
 
+data "aws_s3_bucket" "state_bucket" {
+  bucket = "ansible-linux-sandbox-terraform-state"
+}
+
 resource "aws_iam_role" "lab_role" {
   name_prefix = "${var.project_name}-role"
   assume_role_policy = jsonencode({
@@ -54,6 +68,52 @@ resource "aws_iam_role_policy_attachment" "ssm_core" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+resource "aws_iam_role_policy" "ssm_communication" {
+  name = "ssm-communication"
+  role = aws_iam_role.lab_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["ssm:StartSession", "ssm:SendCommand", "ssm:TerminateSession", "ssm:ResumeSession"]
+        Resource = ["*"]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "s3_access" {
+  name = "s3-access-for-ansible"
+  role = aws_iam_role.lab_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket",
+          "s3:GetBucketLocation"
+        ]
+        Resource = [
+          data.aws_s3_bucket.state_bucket.arn,
+          "${data.aws_s3_bucket.state_bucket.arn}/*"
+        ]
+      },
+      {
+        Effect = "Deny"
+        Action = ["s3:DeleteObject", "s3:PutObject"]
+        Resource = ["${data.aws_s3_bucket.state_bucket.arn}/ansible-sandbox/*"]
+      }
+    ]
+  })
+}
+
 resource "aws_iam_instance_profile" "lab_profile" {
   name_prefix = "${var.project_name}-profile"
   role        = aws_iam_role.lab_role.name
@@ -62,7 +122,6 @@ resource "aws_iam_instance_profile" "lab_profile" {
 resource "aws_instance" "ansible_control" {
   ami                         = data.aws_ami.al2023.id
   instance_type               = var.instance_type
-  key_name                    = aws_key_pair.generated_key.key_name
   subnet_id                   = aws_subnet.public_subnet.id
   vpc_security_group_ids      = [aws_security_group.sg_control.id]
   iam_instance_profile        = aws_iam_instance_profile.lab_profile.name
@@ -70,12 +129,12 @@ resource "aws_instance" "ansible_control" {
 
   user_data = templatefile("${path.module}/user-data.sh", {
     inventory_content = templatefile("${path.module}/inventory.ini", {
-      al2023_ip = aws_instance.al2023_managed_node.private_ip
-      debian_ip = aws_instance.debian_managed_node.private_ip
-      ubuntu_ip = aws_instance.ubuntu_managed_node.private_ip
-      arch_ip   = aws_instance.arch_managed_node.private_ip
+      al2023_id = aws_instance.al2023_managed_node.id
+      debian_id = aws_instance.debian_managed_node.id
+      ubuntu_id = aws_instance.ubuntu_managed_node.id
+      arch_id   = aws_instance.arch_managed_node.id
+      s3_bucket_name = data.aws_s3_bucket.state_bucket.id
     }),
-    private_key_pem = tls_private_key.key.private_key_pem
     ansible_configuration = file("${path.module}/ansible.cfg")
   })
 
@@ -85,27 +144,47 @@ resource "aws_instance" "ansible_control" {
 resource "aws_instance" "al2023_managed_node" {
   ami                    = data.aws_ami.al2023.id
   instance_type          = var.instance_type
-  key_name               = aws_key_pair.generated_key.key_name
   subnet_id              = aws_subnet.private_subnet.id
   vpc_security_group_ids = [aws_security_group.sg_managed.id]
   iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
+  user_data = <<-EOF
+              #!/bin/env bash
+              echo "set enable-bracketed-paste off" >> /etc/inputrc
+
+              echo "set enable-bracketed-paste off" >> /etc/skel/.inputrc
+              EOF
+
   tags = { Name = "${var.project_name}-AL2023-Managed" }
 }
 
 resource "aws_instance" "debian_managed_node" {
   ami                    = data.aws_ami.debian_12.id
   instance_type          = var.instance_type
-  key_name               = aws_key_pair.generated_key.key_name
   subnet_id              = aws_subnet.private_subnet.id
   vpc_security_group_ids = [aws_security_group.sg_managed.id]
   iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
+
+  user_data = <<-EOF
+              #!/bin/env bash
+              apt-get update
+
+              apt-get install -y python3
+
+              mkdir /tmp/ssm
+
+              curl https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb -o /tmp/ssm/amazon-ssm-agent.deb
+
+              dpkg -i /tmp/ssm/amazon-ssm-agent.deb
+              systemctl enable amazon-ssm-agent
+              systemctl start amazon-ssm-agent
+              EOF
+
   tags = { Name = "${var.project_name}-Debian-Managed" }
 }
 
 resource "aws_instance" "ubuntu_managed_node" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
-  key_name               = aws_key_pair.generated_key.key_name
   subnet_id              = aws_subnet.private_subnet.id
   vpc_security_group_ids = [aws_security_group.sg_managed.id]
   iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
@@ -115,14 +194,21 @@ resource "aws_instance" "ubuntu_managed_node" {
 resource "aws_instance" "arch_managed_node" {
   ami                    = data.aws_ami.arch.id
   instance_type          = var.instance_type
-  key_name               = aws_key_pair.generated_key.key_name
   subnet_id              = aws_subnet.private_subnet.id
   vpc_security_group_ids = [aws_security_group.sg_managed.id]
   iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
 
-  user_data = <<-EOF
+user_data = <<-EOF
               #!/bin/env bash
-              pacman -Sy --noconfirm python
+              sleep 30
+
+              sed -i 's/SigLevel    = Required DatabaseOptional/SigLevel    = Optional TrustAll/' /etc/pacman.conf
+
+              until pacman -Sy --noconfirm python amazon-ssm-agent; do
+                sleep 5
+              done
+
+              systemctl enable --now amazon-ssm-agent
               EOF
 
   tags = { Name = "${var.project_name}-Arch-Managed" }

@@ -42,12 +42,39 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-data "aws_ami" "arch" {
+data "aws_ami" "fedora" {
   most_recent = true
-  owners      = ["647457786197"]
+  owners      = ["125523088429"]
   filter {
     name   = "name"
-    values = ["arch-linux-std-hvm-*.x86_64-ebs"]
+    values = ["Fedora-Cloud-Base-*x86_64*"]
+  }
+}
+
+data "aws_ami" "rhel" {
+  most_recent = true
+  owners      = ["309956199498"]
+  filter {
+    name   = "name"
+    values = ["RHEL-*_HVM-*-x86_64-*-Hourly2-GP3"]
+  }
+}
+
+data "aws_ami" "opensuse" {
+  most_recent = true
+  owners      = ["679593333241"]
+  filter {
+    name   = "name"
+    values = ["openSUSE-Leap-*-v*-hvm-ssd-x86_64*"]
+  }
+}
+
+data "aws_ami" "alpine" {
+  most_recent = true
+  owners      = ["538276064493"]
+  filter {
+    name   = "name"
+    values = ["alpine-3*-x86_64-uefi-tiny-r*"]
   }
 }
 
@@ -129,14 +156,27 @@ resource "aws_instance" "ansible_control" {
 
   user_data = templatefile("${path.module}/user-data.sh", {
     inventory_content = templatefile("${path.module}/inventory.ini", {
-      al2023_id = aws_instance.al2023_managed_node.id
-      debian_id = aws_instance.debian_managed_node.id
-      ubuntu_id = aws_instance.ubuntu_managed_node.id
-      arch_id   = aws_instance.arch_managed_node.id
+      al2023_id      = aws_instance.al2023_managed_node.id
+      debian_id      = aws_instance.debian_managed_node.id
+      ubuntu_id      = aws_instance.ubuntu_managed_node.id
+      fedora_id      = aws_instance.fedora_managed_node.id
+      alpine_id      = aws_instance.alpine_managed_node.id
+      rhel_id        = aws_instance.rhel_managed_node.id
+      opensuse_id    = aws_instance.opensuse_managed_node.id
       s3_bucket_name = data.aws_s3_bucket.state_bucket.id
     }),
     ansible_configuration = file("${path.module}/ansible.cfg")
   })
+
+  depends_on = [
+    aws_instance.al2023_managed_node,
+    aws_instance.debian_managed_node,
+    aws_instance.ubuntu_managed_node,
+    aws_instance.fedora_managed_node,
+    aws_instance.alpine_managed_node,
+    aws_instance.rhel_managed_node,
+    aws_instance.opensuse_managed_node
+  ]
 
   tags = { Name = "${var.project_name}-Control" }
 }
@@ -191,25 +231,69 @@ resource "aws_instance" "ubuntu_managed_node" {
   tags = { Name = "${var.project_name}-Ubuntu-Managed" }
 }
 
-resource "aws_instance" "arch_managed_node" {
-  ami                    = data.aws_ami.arch.id
+resource "aws_instance" "fedora_managed_node" {
+  ami                    = data.aws_ami.fedora.id
   instance_type          = var.instance_type
   subnet_id              = aws_subnet.private_subnet.id
   vpc_security_group_ids = [aws_security_group.sg_managed.id]
   iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
+  user_data              = <<-EOF
+                           #!/bin/env bash
+                           dnf install -y python3
+                           dnf install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+                           systemctl enable --now amazon-ssm-agent
 
-user_data = <<-EOF
-              #!/bin/env bash
-              sleep 30
+                           echo "set enable-bracketed-paste off" >> /etc/inputrc
+                           echo "set enable-bracketed-paste off" >> /etc/skel/.inputrc
+                           EOF
+  tags = { Name = "${var.project_name}-Fedora-Managed" }
+}
 
-              sed -i 's/SigLevel    = Required DatabaseOptional/SigLevel    = Optional TrustAll/' /etc/pacman.conf
+resource "aws_instance" "rhel_managed_node" {
+  ami                    = data.aws_ami.rhel.id
+  instance_type          = var.instance_type
+  subnet_id              = aws_subnet.private_subnet.id
+  vpc_security_group_ids = [aws_security_group.sg_managed.id]
+  iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
+  user_data              = <<-EOF
+                           #!/bin/env bash
+                           yum install -y python3
+                           yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+                           systemctl enable --now amazon-ssm-agent
+                           EOF
+  tags = { Name = "${var.project_name}-RHEL-Managed" }
+}
 
-              until pacman -Sy --noconfirm python amazon-ssm-agent; do
-                sleep 5
-              done
+resource "aws_instance" "opensuse_managed_node" {
+  ami                    = data.aws_ami.opensuse.id
+ instance_type          = var.instance_type
+  subnet_id              = aws_subnet.private_subnet.id
+  vpc_security_group_ids = [aws_security_group.sg_managed.id]
+  iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
+  user_data              = <<-EOF
+                           #!/bin/env bash
+                           sleep 30
+                           zypper install -y python3
+                           rpm -i https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+                           systemctl enable --now amazon-ssm-agent
+                           EOF
+  tags = { Name = "${var.project_name}-SUSE-Managed" }
+}
 
-              systemctl enable --now amazon-ssm-agent
+resource "aws_instance" "alpine_managed_node" {
+  ami                    = data.aws_ami.alpine.id
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.private_subnet.id
+  vpc_security_group_ids = [aws_security_group.sg_managed.id]
+  iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
+
+  user_data = <<-EOF
+              #!/bin/sh
+              apk add --no-cache python3 amazon-ssm-agent libc6-compat
+
+              rc-update add amazon-ssm-agent default
+              rc-service amazon-ssm-agent start
               EOF
 
-  tags = { Name = "${var.project_name}-Arch-Managed" }
+  tags = { Name = "${var.project_name}-Alpine-Managed" }
 }

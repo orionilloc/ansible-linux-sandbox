@@ -69,15 +69,6 @@ data "aws_ami" "opensuse" {
   }
 }
 
-data "aws_ami" "alpine" {
-  most_recent = true
-  owners      = ["538276064493"]
-  filter {
-    name   = "name"
-    values = ["alpine-3*-x86_64-uefi-tiny-r*"]
-  }
-}
-
 data "aws_s3_bucket" "state_bucket" {
   bucket = "ansible-linux-sandbox-terraform-state"
 }
@@ -149,10 +140,10 @@ resource "aws_iam_instance_profile" "lab_profile" {
 resource "aws_instance" "ansible_control" {
   ami                         = data.aws_ami.al2023.id
   instance_type               = var.instance_type
-  subnet_id                   = aws_subnet.public_subnet.id
+  subnet_id                   = aws_subnet.private_subnet.id
   vpc_security_group_ids      = [aws_security_group.sg_control.id]
   iam_instance_profile        = aws_iam_instance_profile.lab_profile.name
-  associate_public_ip_address = true
+  associate_public_ip_address = false
 
   user_data = templatefile("${path.module}/user-data.sh", {
     inventory_content = templatefile("${path.module}/inventory.ini", {
@@ -160,10 +151,10 @@ resource "aws_instance" "ansible_control" {
       debian_id      = aws_instance.debian_managed_node.id
       ubuntu_id      = aws_instance.ubuntu_managed_node.id
       fedora_id      = aws_instance.fedora_managed_node.id
-      alpine_id      = aws_instance.alpine_managed_node.id
       rhel_id        = aws_instance.rhel_managed_node.id
       opensuse_id    = aws_instance.opensuse_managed_node.id
       s3_bucket_name = data.aws_s3_bucket.state_bucket.id
+      s3_prefix      = "ansible-transport/"
     }),
     ansible_configuration = file("${path.module}/ansible.cfg")
   })
@@ -173,7 +164,6 @@ resource "aws_instance" "ansible_control" {
     aws_instance.debian_managed_node,
     aws_instance.ubuntu_managed_node,
     aws_instance.fedora_managed_node,
-    aws_instance.alpine_managed_node,
     aws_instance.rhel_managed_node,
     aws_instance.opensuse_managed_node
   ]
@@ -190,7 +180,6 @@ resource "aws_instance" "al2023_managed_node" {
   user_data = <<-EOF
               #!/bin/env bash
               echo "set enable-bracketed-paste off" >> /etc/inputrc
-
               echo "set enable-bracketed-paste off" >> /etc/skel/.inputrc
               EOF
 
@@ -207,13 +196,9 @@ resource "aws_instance" "debian_managed_node" {
   user_data = <<-EOF
               #!/bin/env bash
               apt-get update
-
               apt-get install -y python3
-
               mkdir /tmp/ssm
-
               curl https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb -o /tmp/ssm/amazon-ssm-agent.deb
-
               dpkg -i /tmp/ssm/amazon-ssm-agent.deb
               systemctl enable amazon-ssm-agent
               systemctl start amazon-ssm-agent
@@ -242,7 +227,6 @@ resource "aws_instance" "fedora_managed_node" {
                            dnf install -y python3
                            dnf install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
                            systemctl enable --now amazon-ssm-agent
-
                            echo "set enable-bracketed-paste off" >> /etc/inputrc
                            echo "set enable-bracketed-paste off" >> /etc/skel/.inputrc
                            EOF
@@ -278,22 +262,4 @@ resource "aws_instance" "opensuse_managed_node" {
                            systemctl enable --now amazon-ssm-agent
                            EOF
   tags = { Name = "${var.project_name}-SUSE-Managed" }
-}
-
-resource "aws_instance" "alpine_managed_node" {
-  ami                    = data.aws_ami.alpine.id
-  instance_type          = "t3.micro"
-  subnet_id              = aws_subnet.private_subnet.id
-  vpc_security_group_ids = [aws_security_group.sg_managed.id]
-  iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
-
-  user_data = <<-EOF
-              #!/bin/sh
-              apk add --no-cache python3 amazon-ssm-agent libc6-compat
-
-              rc-update add amazon-ssm-agent default
-              rc-service amazon-ssm-agent start
-              EOF
-
-  tags = { Name = "${var.project_name}-Alpine-Managed" }
 }

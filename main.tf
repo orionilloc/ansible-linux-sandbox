@@ -179,6 +179,9 @@ resource "aws_instance" "al2023_managed_node" {
   iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
   user_data = <<-EOF
               #!/bin/env bash
+              set -euo pipefail
+              exec > >(tee /var/log/user-data.log) 2>&1
+
               echo "set enable-bracketed-paste off" >> /etc/inputrc
               echo "set enable-bracketed-paste off" >> /etc/skel/.inputrc
               EOF
@@ -195,6 +198,9 @@ resource "aws_instance" "debian_managed_node" {
 
   user_data = <<-EOF
               #!/bin/env bash
+              set -euo pipefail
+              exec > >(tee /var/log/user-data.log) 2>&1
+
               apt-get update
               apt-get install -y python3
               mkdir /tmp/ssm
@@ -224,6 +230,9 @@ resource "aws_instance" "fedora_managed_node" {
   iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
   user_data              = <<-EOF
                            #!/bin/env bash
+                           set -euo pipefail
+                           exec > >(tee /var/log/user-data.log) 2>&1
+
                            dnf install -y python3
                            dnf install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
                            systemctl enable --now amazon-ssm-agent
@@ -241,6 +250,9 @@ resource "aws_instance" "rhel_managed_node" {
   iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
   user_data              = <<-EOF
                            #!/bin/env bash
+                           set -euo pipefail
+                           exec > >(tee /var/log/user-data.log) 2>&1
+
                            yum install -y python3
                            yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
                            systemctl enable --now amazon-ssm-agent
@@ -258,7 +270,14 @@ resource "aws_instance" "opensuse_managed_node" {
   iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
   user_data              = <<-EOF
                            #!/bin/env bash
-                           sleep 30
+                           set -euo pipefail
+                           exec > >(tee /var/log/user-data.log) 2>&1
+
+                           until zypper refresh; do
+                           echo "zypper not ready for additional package installs. Retrying..."
+                           sleep 5
+                           done
+
                            zypper install -y python3
                            rpm -i https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
                            systemctl enable --now amazon-ssm-agent

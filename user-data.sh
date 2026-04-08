@@ -1,5 +1,8 @@
 #!/bin/env bash
 
+set -euo pipefail
+exec > >(tee /var/log/user-data.log) 2>&1
+
 sudo dnf update -y
 sudo dnf install -y python3 python3-pip awscli
 
@@ -18,4 +21,6 @@ EOF
 
 chown ec2-user:ec2-user /home/ec2-user/inventory.ini /home/ec2-user/ansible.cfg
 
-touch /home/ec2-user/.ansible_setup_complete
+ansible --version && boto3_check=$(python3 -c "import boto3" 2>&1) \
+  && touch /home/ec2-user/.ansible_setup_complete \
+  || echo "Ansible setup verification failed." >&2

@@ -244,6 +244,8 @@ resource "aws_instance" "rhel_managed_node" {
                            yum install -y python3
                            yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
                            systemctl enable --now amazon-ssm-agent
+                           echo "set enable-bracketed-paste off" >> /etc/inputrc
+                           echo "set enable-bracketed-paste off" >> /etc/skel/.inputrc
                            EOF
   tags = { Name = "${var.project_name}-RHEL-Managed" }
 }

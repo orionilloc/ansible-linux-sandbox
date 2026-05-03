@@ -3,7 +3,7 @@
   ansible.builtin.user:
     name: "{{ item.name }}"
     uid: "{{ item.uid }}"
-    groups: "{{ item.groups }}"
+    groups: "{{ admin_group_map[ansible_os_family] }}"
     shell: "{{ item.shell }}"
     append: true
     state: "{{ item.state }}"

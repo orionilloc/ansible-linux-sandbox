@@ -1,0 +1,20 @@
+---
+
+baseline_packages:
+   - vim
+   - git
+   - htop
+   - curl
+   - wget
+
+baseline_packages_redhat:
+  - vim-enhanced
+
+timezone: "America/New_York"
+
+baseline_users:
+  - name: harrycallahan
+    uid: 1051
+    groups: wheel
+    shell: /bin/bash
+    state: present

@@ -3,7 +3,6 @@
 baseline_packages:
    - vim
    - git
-   - curl
    - wget
 
 baseline_packages_redhat:

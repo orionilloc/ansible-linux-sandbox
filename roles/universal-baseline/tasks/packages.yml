@@ -1,0 +1,13 @@
+---
+- name: Ensure baseline packages are installed
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ baseline_packages }}"
+
+- name: Ensure vim-enhanced is installed on RedHat family
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ baseline_packages_redhat }}"
+  when: ansible_os_family == "RedHat"

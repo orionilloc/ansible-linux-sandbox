@@ -1,0 +1,5 @@
+---
+- hosts: linux
+  become: true
+  roles:
+    - role: universal-baseline

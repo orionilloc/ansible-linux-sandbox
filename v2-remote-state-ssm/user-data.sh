@@ -11,8 +11,11 @@ sudo pip3 install ansible boto3 --no-cache-dir
 curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm" -o "session-manager-plugin.rpm"
 sudo dnf install -y session-manager-plugin.rpm
 
-git clone --no-checkout https://github.com/orionilloc/ansible-linux-sandbox.git /home/ec2-user
-cd /home/ec2-user
+mkdir /home/ec2-user/ansible
+
+git clone --no-checkout https://github.com/orionilloc/ansible-linux-sandbox.git /home/ec2-user/ansible
+
+cd /home/ec2-user/ansible
 git sparse-checkout init
 git sparse-checkout set playbooks/ roles/
 git checkout main

@@ -11,3 +11,10 @@
     state: present
   loop: "{{ baseline_packages_redhat }}"
   when: ansible_os_family == "RedHat"
+
+- name: Ensure curl-minimal is installed on Amazon family
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ baseline_packages_al2023 }}"
+  when: ansible_os_family == "Amazon"

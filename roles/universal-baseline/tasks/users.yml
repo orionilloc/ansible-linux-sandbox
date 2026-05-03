@@ -1,0 +1,10 @@
+---
+- name: Ensure baseline users are present
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    uid: "{{ item.uid }}"
+    groups: "{{ item.groups }}"
+    shell: "{{ item.shell }}"
+    append: true
+    state: "{{ item.state }}"
+  loop: "{{ baseline_users }}"

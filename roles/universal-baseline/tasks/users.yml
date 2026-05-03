@@ -1,9 +1,15 @@
 ---
+- name: Ensure baseline groups exist
+  ansible.builtin.group:
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+  loop: "{{ baseline_groups }}"
+
 - name: Ensure baseline users are present
   ansible.builtin.user:
     name: "{{ item.name }}"
     uid: "{{ item.uid }}"
-    groups: "{{ admin_group_map[ansible_os_family] }}"
+    groups: "{{ admin_group_map[ansible_os_family] if item.is_admin else 'lab_users' }}"
     shell: "{{ item.shell }}"
     append: true
     state: "{{ item.state }}"

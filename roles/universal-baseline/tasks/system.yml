@@ -2,3 +2,19 @@
 - name: Set system timezone
   community.general.timezone:
     name: "{{ timezone }}"
+
+- name: Deploy vimrc to ec2-user
+  ansible.builtin.copy:
+    src: .vimrc
+    dest: /home/ec2-user/.vimrc
+    owner: ec2-user
+    group: ec2-user
+    mode: '0644'
+
+- name: Deploy MOTD template
+  ansible.builtin.template:
+    src: motd.j2
+    dest: /etc/motd
+    owner: root
+    group: root
+    mode: '0644'

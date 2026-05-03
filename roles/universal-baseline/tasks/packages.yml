@@ -1,18 +1,29 @@
 ---
+- name: Update apt cache on Debian family
+  ansible.builtin.apt:
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
 - name: Ensure baseline packages are installed
   ansible.builtin.package:
     name: "{{ item }}"
     state: present
   loop: "{{ baseline_packages }}"
 
-- name: Ensure vim-enhanced is installed on RedHat family
+- name: Ensure vim-enhanced on RedHat family
   ansible.builtin.package:
     name: "{{ item }}"
     state: present
   loop: "{{ baseline_packages_redhat }}"
   when: ansible_os_family == "RedHat"
 
-- name: Ensure curl-minimal is installed on Amazon family
+- name: Ensure curl on non-AL2023 nodes
+  ansible.builtin.package:
+    name: curl
+    state: present
+  when: ansible_distribution != "Amazon"
+
+- name: Ensure curl-minimal on Amazon family
   ansible.builtin.package:
     name: "{{ item }}"
     state: present

@@ -20,6 +20,19 @@ timezone: "America/New_York"
 baseline_users:
   - name: harrycallahan
     uid: 1051
-    groups: wheel
     shell: /bin/bash
     state: present
+    is_admin: true
+
+  - name: lab_user1
+    uid: 1052
+    groups: lab_users
+    shell: /bin/bash
+    state: present
+    is_admin: false
+
+baseline_groups:
+  - name: lab_users
+    gid: 2001
+    state: present
+

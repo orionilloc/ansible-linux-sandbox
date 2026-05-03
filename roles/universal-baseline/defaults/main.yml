@@ -1,4 +1,8 @@
 ---
+admin_group_map:
+  RedHat: wheel
+  Debian: sudo
+  Suse: root
 
 baseline_packages:
    - vim

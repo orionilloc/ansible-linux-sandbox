@@ -24,9 +24,8 @@
     state: present
   when: ansible_distribution != "Amazon"
 
-- name: Ensure curl-minimal on Amazon family
+- name: Ensure curl-minimal on AL2023
   ansible.builtin.package:
-    name: "{{ item }}"
+    name: curl-minimal
     state: present
-  loop: "{{ baseline_packages_al2023 }}"
-  when: ansible_os_family == "Amazon"
+  when: ansible_distribution == "Amazon"

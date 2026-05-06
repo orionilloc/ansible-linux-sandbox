@@ -3,12 +3,12 @@
   community.general.timezone:
     name: "{{ timezone }}"
 
-- name: Deploy vimrc to ec2-user
+- name: Deploy vimrc
   ansible.builtin.copy:
     src: .vimrc
-    dest: /home/ec2-user/.vimrc
-    owner: ec2-user
-    group: ec2-user
+    dest: "/home/{{ ansible_user }}/.vimrc"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     mode: '0644'
 
 - name: Deploy MOTD template

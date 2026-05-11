@@ -235,6 +235,7 @@ resource "aws_instance" "fedora_managed_node" {
 
                            dnf install -y python3
                            dnf install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+                           dnf install -y python3-libdnf5
                            systemctl enable --now amazon-ssm-agent
                            echo "set enable-bracketed-paste off" >> /etc/inputrc
                            echo "set enable-bracketed-paste off" >> /etc/skel/.inputrc

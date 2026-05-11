@@ -11,11 +11,17 @@
     state: present
   when: ansible_os_family == "Debian"
 
+- name: Ensure baseline packages on Fedora
+  ansible.builtin.dnf5:
+    name: "{{ baseline_packages + ['curl', 'vim-enhanced'] }}"
+    state: present
+  when: ansible_distribution == "Fedora"
+
 - name: Ensure baseline packages on RedHat family
   ansible.builtin.dnf:
     name: "{{ baseline_packages + ['curl', 'vim-enhanced'] }}"
     state: present
-  when: ansible_os_family == "RedHat" and ansible_distribution != "Amazon"
+  when: ansible_os_family == "RedHat" and ansible_distribution != "Amazon" and ansible_distribution != "Fedora"
 
 - name: Ensure baseline packages on AL2023
   ansible.builtin.dnf:

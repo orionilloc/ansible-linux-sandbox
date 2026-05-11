@@ -9,12 +9,6 @@ baseline_packages:
    - git
    - wget
 
-baseline_packages_redhat:
-  - vim-enhanced
-
-baseline_packages_al2023:
-  - curl-minimal
-
 timezone: "America/New_York"
 
 baseline_users:

@@ -1,0 +1,25 @@
+# aws_ec2.yml
+plugin: amazon.aws.aws_ec2
+
+regions:
+  - us-east-1
+
+filters:
+  tag:AnsibleGroup:
+    - al2023
+    - debian
+    - ubuntu
+    - fedora
+    - rhel
+    - opensuse
+
+keyed_groups:
+  - key: tags.AnsibleGroup
+    prefix: ""
+    separator: ""
+
+compose:
+  ansible_host: instance_id
+
+hostnames:
+  - tag:Name

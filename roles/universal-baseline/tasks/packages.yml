@@ -5,27 +5,26 @@
     cache_valid_time: 0
   when: ansible_os_family == "Debian"
 
-- name: Ensure baseline packages are installed
-  ansible.builtin.package:
-    name: "{{ item }}"
+- name: Ensure baseline packages on Debian family
+  ansible.builtin.apt:
+    name: "{{ baseline_packages + ['curl'] }}"
     state: present
-  loop: "{{ baseline_packages }}"
+  when: ansible_os_family == "Debian"
 
-- name: Ensure vim-enhanced on RedHat family
-  ansible.builtin.package:
-    name: "{{ item }}"
+- name: Ensure baseline packages on RedHat family
+  ansible.builtin.dnf:
+    name: "{{ baseline_packages + ['curl', 'vim-enhanced'] }}"
     state: present
-  loop: "{{ baseline_packages_redhat }}"
-  when: ansible_os_family == "RedHat"
+  when: ansible_os_family == "RedHat" and ansible_distribution != "Amazon"
 
-- name: Ensure curl on non-AL2023 nodes
-  ansible.builtin.package:
-    name: curl
-    state: present
-  when: ansible_distribution != "Amazon"
-
-- name: Ensure curl-minimal on AL2023
-  ansible.builtin.package:
-    name: curl-minimal
+- name: Ensure baseline packages on AL2023
+  ansible.builtin.dnf:
+    name: "{{ baseline_packages + ['curl-minimal', 'vim-enhanced'] }}"
     state: present
   when: ansible_distribution == "Amazon"
+
+- name: Ensure baseline packages on SUSE family
+  community.general.zypper:
+    name: "{{ baseline_packages + ['curl'] }}"
+    state: present
+  when: ansible_os_family == "Suse"

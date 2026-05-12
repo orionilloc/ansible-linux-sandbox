@@ -32,3 +32,7 @@ compose:
   ansible_user: >-
     {'al2023': 'ec2-user', 'debian': 'admin', 'ubuntu': 'ubuntu',
      'fedora': 'fedora', 'rhel': 'ec2-user', 'opensuse': 'ec2-user'}[tags.AnsibleGroup]
+
+hostnames:
+  - tag:Name
+  - instance-id

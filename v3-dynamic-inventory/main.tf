@@ -132,6 +132,22 @@ resource "aws_iam_role_policy" "s3_access" {
   })
 }
 
+resource "aws_iam_role_policy" "ec2_describe" {
+  name = "ec2-describe-for-dynamic-inventory"
+  role = aws_iam_role.lab_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["ec2:DescribeInstances", "ec2:DescribeTags"]
+        Resource = ["*"]
+      }
+    ]
+  })
+}
+
 resource "aws_iam_instance_profile" "lab_profile" {
   name_prefix = "${var.project_name}-profile"
   role        = aws_iam_role.lab_role.name
@@ -147,6 +163,7 @@ resource "aws_instance" "ansible_control" {
 
   user_data = templatefile("${path.module}/user-data.sh", {
   ansible_configuration = file("${path.module}/ansible.cfg")
+  dynamic_inventory_config = file("${path.module}/aws_ec2.yml")
 })
 
   depends_on = [

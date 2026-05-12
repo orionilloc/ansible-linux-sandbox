@@ -20,15 +20,15 @@ git sparse-checkout init
 git sparse-checkout set playbooks/ roles/
 git checkout main
 
-cat <<'EOF' > /home/ec2-user/inventory.ini
-${inventory_content}
-EOF
-
 cat <<'EOF' > /home/ec2-user/ansible.cfg
 ${ansible_configuration}
 EOF
 
-chown -R ec2-user:ec2-user /home/ec2-user/inventory.ini /home/ec2-user/ansible.cfg /home/ec2-user/ansible
+cat <<'EOF' > /home/ec2-user/aws_ec2.yml
+${dynamic_inventory_config}
+EOF
+
+chown -R ec2-user:ec2-user /home/ec2-user/ansible.cfg /home/ec2-user/ansible /home/ec2-user/aws_ec2.yml
 
 ansible --version && boto3_check=$(python3 -c "import boto3" 2>&1) \
   && touch /home/ec2-user/.ansible_setup_complete \

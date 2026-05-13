@@ -1,0 +1,42 @@
+name: Terraform CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'v3-dynamic-inventory/**.tf'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform:
+    name: Validate & Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::489600148939:role/iam-role-github-actions-ansible-linux-sandbox
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: v3-dynamic-inventory
+        run: terraform init -backend=false
+
+      - name: Terraform Format Check
+        working-directory: v3-dynamic-inventory
+        run: terraform fmt --check
+
+      - name: Terraform Validate
+        working-directory: v3-dynamic-inventory
+        run: terraform validate

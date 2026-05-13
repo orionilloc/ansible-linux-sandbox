@@ -1,8 +1,12 @@
 ---
+- name: Apply package configuration
+  ansible.builtin.import_tasks: packages.yml
 
-- import_tasks: packages.yml
-- import_tasks: system.yml
-- import_tasks: users.yml
-- import_tasks: updates.yml
+- name: Apply system configuration
+  ansible.builtin.import_tasks: system.yml
 
-#test
+- name: Apply user configuration
+  ansible.builtin.import_tasks: users.yml
+
+- name: Apply system updates
+  ansible.builtin.import_tasks: updates.yml

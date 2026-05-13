@@ -1,0 +1,33 @@
+name: Ansible CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'playbooks/**'
+      - 'roles/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  ansible-lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ansible-lint
+        run: pip install ansible-lint
+
+      - name: Run ansible-lint
+        run: ansible-lint playbooks/ roles/

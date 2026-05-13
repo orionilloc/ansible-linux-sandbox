@@ -163,9 +163,9 @@ resource "aws_instance" "ansible_control" {
   associate_public_ip_address = false
 
   user_data = templatefile("${path.module}/user-data.sh", {
-  ansible_configuration = file("${path.module}/ansible.cfg")
-  dynamic_inventory_config = file("${path.module}/aws_ec2.yml")
-})
+    ansible_configuration    = file("${path.module}/ansible.cfg")
+    dynamic_inventory_config = file("${path.module}/aws_ec2.yml")
+  })
 
   depends_on = [
     aws_instance.al2023_managed_node,

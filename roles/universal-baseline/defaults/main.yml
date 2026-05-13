@@ -5,9 +5,9 @@ admin_group_map:
   Suse: root
 
 baseline_packages:
-   - vim
-   - git
-   - wget
+  - vim
+  - git
+  - wget
 
 timezone: "America/New_York"
 
@@ -29,4 +29,3 @@ baseline_groups:
   - name: lab_users
     gid: 2001
     state: present
-

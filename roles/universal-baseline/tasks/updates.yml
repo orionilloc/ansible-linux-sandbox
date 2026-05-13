@@ -8,17 +8,17 @@
 - name: Run daily package updates on Fedora
   ansible.builtin.dnf5:
     name: "*"
-    state: latest
+    state: latest # noqa: package-latest
   when: ansible_distribution == "Fedora"
 
 - name: Run daily package updates on RedHat family
   ansible.builtin.dnf:
     name: "*"
-    state: latest
+    state: latest # noqa: package-latest
   when: ansible_os_family == "RedHat" and ansible_distribution != "Fedora"
 
 - name: Run daily package updates on SUSE family
   community.general.zypper:
     name: "*"
-    state: latest
+    state: latest # noqa: package-latest
   when: ansible_os_family == "Suse"

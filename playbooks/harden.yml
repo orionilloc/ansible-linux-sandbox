@@ -3,4 +3,4 @@
   hosts: linux
   become: true
   roles:
-    - role: hardening
+    - role: os-hardening

@@ -1,0 +1,6 @@
+---
+- name: Stop and disable sshd service
+  ansible.builtin.service:
+    name: "{{ 'ssh' if ansible_os_family == 'Debian' else 'sshd' }}"
+    state: stopped
+    enabled: false

@@ -1,6 +1,5 @@
 #main.tf
 
-
 terraform {
   backend "s3" {
     bucket       = "ansible-linux-sandbox-terraform-state"

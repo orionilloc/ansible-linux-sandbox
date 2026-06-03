@@ -1,0 +1,12 @@
+- name: Stop and disable sshd service
+   ansible.builtin.service:
+      name: sshd
+      state: stopped
+      enabled: false
+
+- name: Remove SSH service from firewalld
+  ansible.posix.firewalld:
+    service: ssh
+    state: disabled
+    permanent: true
+    immediate: true

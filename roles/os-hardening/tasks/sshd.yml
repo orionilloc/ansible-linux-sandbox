@@ -4,15 +4,3 @@
     name: "{{ 'ssh' if ansible_os_family == 'Debian' else 'sshd' }}"
     state: stopped
     enabled: false
-
-- name: Ensure firewalld Python bindings are present
-  ansible.builtin.package:
-    name: python3-firewall
-    state: present
-
-- name: Remove SSH service from firewalld
-  ansible.posix.firewalld:
-    service: ssh
-    state: disabled
-    permanent: true
-    immediate: true

@@ -1,0 +1,6 @@
+---
+- name: Apply OS hardening to all Linux nodes
+  hosts: linux
+  become: true
+  roles:
+    - role: os-hardening

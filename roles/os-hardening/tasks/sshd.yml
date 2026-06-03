@@ -1,9 +1,14 @@
 ---
 - name: Stop and disable sshd service
-   ansible.builtin.service:
-      name: sshd
-      state: stopped
-      enabled: false
+  ansible.builtin.service:
+    name: "{{ 'ssh' if ansible_os_family == 'Debian' else 'sshd' }}"
+    state: stopped
+    enabled: false
+
+- name: Ensure firewalld Python bindings are present
+  ansible.builtin.package:
+    name: python3-firewall
+    state: present
 
 - name: Remove SSH service from firewalld
   ansible.posix.firewalld:

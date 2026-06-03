@@ -1,0 +1,9 @@
+---
+- name: Apply sysctl kernel hardening
+  ansible.builtin.import_tasks: sysctl.yml
+
+- name: Apply SSH controls
+  ansible.builtin.import_tasks: sshd.yml
+
+- name: Apply filesystem hardening
+  ansible.builtin.import_tasks: filesystem.yml

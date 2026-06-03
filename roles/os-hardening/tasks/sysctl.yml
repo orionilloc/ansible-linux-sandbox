@@ -1,3 +1,4 @@
+---
 - name: Harden kernel parameters
   ansible.posix.sysctl:
     name: "{{ item.name }}"

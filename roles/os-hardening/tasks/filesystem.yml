@@ -1,0 +1,12 @@
+---
+- name: Ensure sticky bit is set on /tmp
+  ansible.builtin.file:
+    path: /tmp
+    mode: "1777"
+    state: directory
+
+- name: Ensure sticky bit is set on /var/tmp
+  ansible.builtin.file:
+    path: /var/tmp
+    mode: "1777"
+    state: directory

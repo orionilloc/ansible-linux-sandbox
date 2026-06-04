@@ -4,7 +4,7 @@ A multi-distro Ansible automation lab built on AWS, evolved across three archite
 
 ---
 
-## Evolution Overview
+## 📈 Evolution Overview
 
 | Version | Connectivity | State | Nodes | Inventory |
 |---|---|---|---|---|
@@ -14,7 +14,7 @@ A multi-distro Ansible automation lab built on AWS, evolved across three archite
 
 ---
 
-## v1 — Legacy SSH
+## 🔑 v1 — Legacy SSH
 
 The starting point. Four nodes, SSH-based connectivity, local Terraform state, and a public IP on the control node.
 
@@ -43,7 +43,7 @@ v1-legacy-ssh/
 
 ---
 
-## v2 — Remote State + SSM
+## 🔒 v2 — Remote State + SSM
 
 SSM replaces SSH, remote state replaces local state, the node count expands to six distros, and the control node loses its public IP entirely.
 
@@ -105,7 +105,7 @@ Note that the inventory now uses instance IDs rather than private IPs. SSM targe
 
 ---
 
-## v3 — Dynamic Inventory
+## ⚡ v3 — Dynamic Inventory
 
 The main infrastructure is unchanged. The single addition is replacing the statically templated `inventory.ini` with a dynamic inventory plugin.
 
@@ -133,7 +133,7 @@ v3-dynamic-inventory/
 
 ---
 
-## Ansible Roles
+## 🎭 Ansible Roles
 
 I started working on actual Ansible playbooks around halfway through my v2 commits. 
 
@@ -190,7 +190,7 @@ playbooks/
 
 ---
 
-## CI/CD Pipeline
+## ⚙️ CI/CD Pipeline
 
 Two GitHub Actions workflows run on every pull request.
 
@@ -205,7 +205,7 @@ Two GitHub Actions workflows run on every pull request.
 
 Neither workflow touches live infrastructure. The gate exists to catch problems in the diff.
 
-## Prerequisites
+## 🚀 Deployment
 
 ```bash
 # Provision the state backend

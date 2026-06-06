@@ -10,7 +10,7 @@ A multi-distro Ansible automation lab built on AWS, evolved across three archite
 |---|---|---|---|---|
 | v1 — Legacy SSH | SSH + public IP | Local | 4 (AL2023, Debian, Ubuntu, Arch) | Static, templated at apply |
 | v2 — Remote State + SSM | SSM, no public IPs | S3 + DynamoDB | 6 (AL2023, Debian, Ubuntu, Fedora, RHEL, openSUSE) | Static, templated at apply |
-| v3 — Dynamic Inventory | SSM, no public IPs | S3 + DynamoDB | 6 | Dynamic via `aws_ec2` plugin |
+| v3 — Dynamic Inventory | SSM, no public IPs | S3 + DynamoDB | 6 (AL2023, Debian, Ubuntu, Fedora, RHEL, openSUSE) | Dynamic via `aws_ec2` plugin |
 
 ---
 
@@ -21,10 +21,10 @@ The starting point. Four nodes, SSH-based connectivity, local Terraform state, a
 **How it worked:**
 Terraform generates an RSA key pair at apply time using the `tls` provider, uploads the public key to AWS, and writes the private key to a local `.pem` file. The control node gets a public IP and an inbound rule on port 22. Managed nodes live in a private subnet and only accept SSH from the control node's security group.
 
-The inventory and `ansible.cfg` are rendered dynamically from template files at apply time — private IPs get interpolated into `inventory.ini`, the key path gets wired up, and everything lands on the control node via `user_data`. Strict host key checking is disabled to avoid first-connection prompts.
+The inventory and `ansible.cfg` are rendered dynamically from template files at apply time. Private IPs get interpolated into `inventory.ini`, the key path gets wired up, and everything lands on the control node via `user_data`. Strict host key checking is disabled to avoid first-connection prompts.
 
 **What didn't work:**
-Arch Linux. It's in the inventory, it never reliably worked — dependency issues, race conditions in the bootstrap, and honestly Arch isn't something you'd encounter managing real infrastructure. It's there. It's broken. Moving on.
+Arch Linux. It's in the inventory, and it never reliably worked. I encountered dependency issues, race conditions in the bootstrap, and honestly Arch isn't something you'd encounter managing real infrastructure. It's there. It's broken. Moving on.
 
 The bigger structural problem with this version: templating the inventory at apply time means if you ever need to replace a single EC2 instance with `terraform -replace`, the inventory doesn't update cleanly. The whole apply has to run. It works for a clean build, not for ongoing management. You'd need to manually update values which is tedious and error-prone.
 
@@ -60,9 +60,9 @@ bootstrap-ansible-linux-sandbox/
 
 Switching from SSH to SSM required more than changing `ansible_connection` in the inventory. A few things that had to change:
 
-**IAM policies.** The SSM connection plugin uses S3 as a transport layer — Ansible modules are uploaded to a bucket, executed on the managed node, and results are written back. The instance profile needed explicit `s3:PutObject`, `s3:GetObject`, and `s3:DeleteObject` permissions on that bucket, plus a `Deny` on the Terraform state prefix so the control node couldn't accidentally touch state files.
+**IAM policies.** The SSM connection plugin uses S3 as a transport layer. Ansible modules are uploaded to a bucket, executed on the managed node, and results are written back. The instance profile needed explicit `s3:PutObject`, `s3:GetObject`, and `s3:DeleteObject` permissions on that bucket, plus a `Deny` on the Terraform state prefix so the control node couldn't accidentally touch state files.
 
-**No more public IP on the control node.** Without SSH, there's no reason for the control node to be reachable from the internet. It moves to the private subnet. You access it via `aws ssm start-session` from your local machine — same IAM credentials, no exposed port.
+**No more public IP on the control node.** Without SSH, there's no reason for the control node to be reachable from the internet. It moves to the private subnet. You access it via `aws ssm start-session` from your local machine using the same IAM credentials and no exposed port.
 
 **S3 transport vs SSH transport.** SSH-based Ansible transfers modules over the SSH connection itself, which has byte limits. The SSM plugin routes module transfer through S3, which removes that constraint and performs better when running tasks across multiple nodes simultaneously.
 
@@ -82,11 +82,11 @@ done
 zypper install -y python3
 ```
 
-Brittle? Arguably. But these are ephemeral nodes — if something goes wrong you tear them down and apply again. That's the point of infrastructure as code.
+Brittle? Arguably. But these are ephemeral nodes. If something goes wrong you tear them down and apply again.
 
 **Bracketed paste mode.** RHEL-family nodes (RHEL, Fedora) have bracketed paste enabled by default in `/etc/inputrc`. This causes terminal noise when SSM sessions paste content — control sequences appear as literal characters. Fixed by appending `set enable-bracketed-paste off` to `/etc/inputrc` and `/etc/skel/.inputrc` in `user_data`.
 
-**Security groups.** The control node's security group has egress-only rules — no inbound at all. Managed nodes accept all traffic from the control node's security group and nothing else. SSM connectivity doesn't require any inbound rules because the agent initiates outbound connections to the AWS service endpoint.
+**Security groups.** The control node's security group has egress-only rules with no inbound at all. Managed nodes accept all traffic from the control node's security group and nothing else. SSM connectivity doesn't require any inbound rules because the agent initiates outbound connections to the AWS service endpoint.
 
 **Key files:**
 ```
@@ -122,7 +122,7 @@ keyed_groups:
     prefix: distro
 ```
 
-The plugin queries the AWS API at runtime and builds the inventory from EC2 tags. This solves the `terraform -replace` problem from v1 — if a node is replaced, the next Ansible run sees the new instance ID automatically without a full Terraform apply.
+The plugin queries the AWS API at runtime and builds the inventory from EC2 tags. This solves the `terraform -replace` problem from v1. If a node is replaced, the next Ansible run sees the new instance ID automatically without a full Terraform apply.
 
 **Key files:**
 ```

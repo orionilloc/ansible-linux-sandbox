@@ -1,6 +1,9 @@
 # Ansible Linux Sandbox
+A multi-distro Ansible automation lab built on AWS, evolved across three architectural versions.
+Each version exists because the previous one had a concrete problem: keys on disk, static
+inventory that broke on instance replacement, no gate between a bad playbook and live nodes.
 
-A multi-distro Ansible automation lab built on AWS, evolved across three architectural versions. The goal was to move from a tutorial-style SSH setup toward something that reflects how infrastructure is actually managed in production — private networking, IAM-based authentication, role-based configuration management, and a CI/CD pipeline that catches problems before they reach live infrastructure.
+The progression is the point.
 
 ---
 
@@ -107,7 +110,13 @@ Note that the inventory now uses instance IDs rather than private IPs. SSM targe
 
 ## ⚡ v3 — Dynamic Inventory
 
-The main infrastructure is unchanged. The single addition is replacing the statically templated `inventory.ini` with a dynamic inventory plugin.
+The main infrastructure is unchanged from v2. The meaningful addition is replacing the statically
+templated `inventory.ini` with a dynamic inventory plugin, which finally solves the instance
+replacement problem from v1. When a node gets replaced, the next Ansible run queries the AWS API
+and finds the new instance automatically. No Terraform apply required, no manual inventory edits.
+
+The roles and playbooks were also built during this phase, once the infrastructure was stable
+enough to actually test configuration management against.
 
 ```yaml
 # aws_ec2.yml
@@ -189,21 +198,28 @@ playbooks/
 ```
 
 ---
-
 ## ⚙️ CI/CD Pipeline
 
-Two GitHub Actions workflows run on every pull request.
+Two GitHub Actions workflows run on every pull request targeting main. Neither touches live
+infrastructure. The gate exists to catch problems in the diff before they reach the control node.
 
 **`terraform-ci.yml`**
-- `terraform fmt -check` — formatting is enforced, not suggested
-- `terraform validate` — structural validation before any plan runs
+- `terraform fmt -check` — formatting enforced, not suggested. Fails the PR if spacing is wrong.
+- `terraform validate` — structural validation before any plan runs.
 
 **`ansible-ci.yml`**
-- `ansible-lint` — style and idempotency pattern enforcement
-- `ansible-playbook --syntax-check` — task structure validation without connecting to hosts
-- Installs collections from `collections/requirements.yml` (`community.general`, `ansible.posix`)
+- `ansible-lint` — catches style issues and non-idempotent patterns before runtime.
+- `ansible-playbook --syntax-check` — validates task structure without connecting to hosts.
+- Installs collections from `collections/requirements.yml` at workflow runtime.
 
-Neither workflow touches live infrastructure. The gate exists to catch problems in the diff.
+The pipeline uses OIDC authentication to assume an AWS IAM role rather than storing long-lived
+credentials as repository secrets. The GitHub Actions identity provider is registered in IAM,
+and the role trust policy restricts assumption to a specific repository and branch. No access
+keys anywhere in the pipeline.
+
+Real failures caught during setup: `ansible-lint` flagged several tasks using the `command`
+module where an idempotent module existed, and `terraform fmt` failing on inconsistent spacing
+in the IAM policy blocks that looked fine in the editor.
 
 ## 🚀 Deployment
 

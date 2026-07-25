@@ -2,7 +2,7 @@
 
 A multi-distro Ansible automation lab built on AWS, evolved across three architectural versions.
 Each version exists because the previous one had a concrete problem: keys on disk, static
-inventory that broke on instance replacement, no gate between a bad playbook and live nodes.
+inventory that broke on instance replacement, no gate between a faulty playbook and live nodes.
 
 The progression is the point. The full writeup lives in the [blog series](https://orionilloc.github.io).
 

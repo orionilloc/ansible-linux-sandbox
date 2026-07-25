@@ -2,7 +2,6 @@
 
 terraform {
   backend "s3" {
-    bucket         = "ansible-linux-sandbox-terraform-state"
     key            = "ansible-sandbox/terraform.tfstate"
     region         = "us-east-1"
     use_lockfile   = true
@@ -13,6 +12,12 @@ terraform {
 provider "aws" {
   region  = var.aws_region
   profile = var.aws_profile
+}
+
+data "aws_caller_identity" "current" {}
+
+data "aws_s3_bucket" "state_bucket" {
+  bucket = "ansible-linux-sandbox-tf-state-${data.aws_caller_identity.current.account_id}"
 }
 
 data "aws_ami" "al2023" {
@@ -67,10 +72,6 @@ data "aws_ami" "opensuse" {
     name   = "name"
     values = ["openSUSE-Leap-*-v*-hvm-ssd-x86_64*"]
   }
-}
-
-data "aws_s3_bucket" "state_bucket" {
-  bucket = "ansible-linux-sandbox-terraform-state"
 }
 
 resource "aws_iam_role" "lab_role" {

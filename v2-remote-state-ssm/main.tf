@@ -2,10 +2,10 @@
 
 terraform {
   backend "s3" {
-    key            = "ansible-sandbox/terraform.tfstate"
-    region         = "us-east-1"
-    use_lockfile   = true
-    encrypt        = true
+    key          = "ansible-sandbox/terraform.tfstate"
+    region       = "us-east-1"
+    use_lockfile = true
+    encrypt      = true
   }
 }
 
@@ -77,7 +77,7 @@ data "aws_ami" "opensuse" {
 resource "aws_iam_role" "lab_role" {
   name_prefix = "${var.project_name}-role"
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
+    Version   = "2012-10-17"
     Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "ec2.amazonaws.com" } }]
   })
 }
@@ -111,8 +111,8 @@ resource "aws_iam_role_policy" "s3_access" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           "s3:GetObject",
           "s3:PutObject",
           "s3:DeleteObject",
@@ -125,8 +125,8 @@ resource "aws_iam_role_policy" "s3_access" {
         ]
       },
       {
-        Effect = "Deny"
-        Action = ["s3:DeleteObject", "s3:PutObject"]
+        Effect   = "Deny"
+        Action   = ["s3:DeleteObject", "s3:PutObject"]
         Resource = ["${data.aws_s3_bucket.state_bucket.arn}/ansible-sandbox/*"]
       }
     ]
@@ -178,7 +178,7 @@ resource "aws_instance" "al2023_managed_node" {
   subnet_id              = aws_subnet.private_subnet.id
   vpc_security_group_ids = [aws_security_group.sg_managed.id]
   iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
-  user_data = <<-EOF
+  user_data              = <<-EOF
               #!/bin/env bash
               set -euo pipefail
               exec > >(tee /var/log/user-data.log) 2>&1
@@ -220,7 +220,7 @@ resource "aws_instance" "ubuntu_managed_node" {
   subnet_id              = aws_subnet.private_subnet.id
   vpc_security_group_ids = [aws_security_group.sg_managed.id]
   iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
-  tags = { Name = "${var.project_name}-Ubuntu-Managed" }
+  tags                   = { Name = "${var.project_name}-Ubuntu-Managed" }
 }
 
 resource "aws_instance" "fedora_managed_node" {
@@ -241,7 +241,7 @@ resource "aws_instance" "fedora_managed_node" {
                            echo "set enable-bracketed-paste off" >> /etc/inputrc
                            echo "set enable-bracketed-paste off" >> /etc/skel/.inputrc
                            EOF
-  tags = { Name = "${var.project_name}-Fedora-Managed" }
+  tags                   = { Name = "${var.project_name}-Fedora-Managed" }
 }
 
 resource "aws_instance" "rhel_managed_node" {
@@ -261,12 +261,12 @@ resource "aws_instance" "rhel_managed_node" {
                            echo "set enable-bracketed-paste off" >> /etc/inputrc
                            echo "set enable-bracketed-paste off" >> /etc/skel/.inputrc
                            EOF
-  tags = { Name = "${var.project_name}-RHEL-Managed" }
+  tags                   = { Name = "${var.project_name}-RHEL-Managed" }
 }
 
 resource "aws_instance" "opensuse_managed_node" {
   ami                    = data.aws_ami.opensuse.id
- instance_type          = var.instance_type
+  instance_type          = var.instance_type
   subnet_id              = aws_subnet.private_subnet.id
   vpc_security_group_ids = [aws_security_group.sg_managed.id]
   iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
@@ -284,5 +284,5 @@ resource "aws_instance" "opensuse_managed_node" {
                            rpm -i https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
                            systemctl enable --now amazon-ssm-agent
                            EOF
-  tags = { Name = "${var.project_name}-SUSE-Managed" }
+  tags                   = { Name = "${var.project_name}-SUSE-Managed" }
 }

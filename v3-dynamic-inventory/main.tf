@@ -164,7 +164,7 @@ resource "aws_instance" "ansible_control" {
   associate_public_ip_address = false
 
   user_data = templatefile("${path.module}/user-data.sh", {
-    ansible_configuration    = file("${path.module}/ansible.cfg")
+    ansible_configuration = file("${path.module}/ansible.cfg")
     dynamic_inventory_config = templatefile("${path.module}/aws_ec2.yml", {
       s3_bucket_name = data.aws_s3_bucket.state_bucket.id
     })

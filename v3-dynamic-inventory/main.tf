@@ -2,7 +2,6 @@
 
 terraform {
   backend "s3" {
-    bucket       = "ansible-linux-sandbox-terraform-state"
     key          = "ansible-sandbox/terraform.tfstate"
     region       = "us-east-1"
     use_lockfile = true
@@ -13,6 +12,13 @@ terraform {
 provider "aws" {
   region  = var.aws_region
   profile = var.aws_profile
+}
+
+
+data "aws_caller_identity" "current" {}
+
+data "aws_s3_bucket" "state_bucket" {
+  bucket = "ansible-linux-sandbox-tf-state-${data.aws_caller_identity.current.account_id}"
 }
 
 data "aws_ami" "al2023" {
@@ -67,10 +73,6 @@ data "aws_ami" "opensuse" {
     name   = "name"
     values = ["openSUSE-Leap-*-v*-hvm-ssd-x86_64*"]
   }
-}
-
-data "aws_s3_bucket" "state_bucket" {
-  bucket = "ansible-linux-sandbox-terraform-state"
 }
 
 resource "aws_iam_role" "lab_role" {
@@ -162,8 +164,10 @@ resource "aws_instance" "ansible_control" {
   associate_public_ip_address = false
 
   user_data = templatefile("${path.module}/user-data.sh", {
-    ansible_configuration    = file("${path.module}/ansible.cfg")
-    dynamic_inventory_config = file("${path.module}/aws_ec2.yml")
+    ansible_configuration = file("${path.module}/ansible.cfg")
+    dynamic_inventory_config = templatefile("${path.module}/aws_ec2.yml", {
+      s3_bucket_name = data.aws_s3_bucket.state_bucket.id
+    })
   })
 
   depends_on = [

@@ -5,7 +5,7 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "ansible-linux-sandbox-terraform-state"
+  bucket = "ansible-linux-sandbox-tf-state-${data.aws_caller_identity.current.account_id}"
   lifecycle {
     prevent_destroy = true
   }

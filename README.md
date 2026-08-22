@@ -20,6 +20,8 @@ The full writeup lives here: [Part 1](https://orionilloc.github.io/posts/Ansible
 
 ## 🔑 v1 — Legacy SSH
 
+![v1 architecture](docs/ansible-linux-sandbox-v1-architecture.jpg)
+
 Looks more like a traditional server architecture. Uses default SSH-based connectivity, local Terraform state, and a public IP on the control node. Terraform generates an RSA key pair at apply time and renders the inventory from a template. This works for a clean build,
 but breaks the moment a single instance needs to be replaced.
 
@@ -62,6 +64,8 @@ v2-remote-state-ssm/
 ---
 
 ## ⚡ v3 — Dynamic Inventory + Roles
+
+![v3 architecture](docs/ansible-linux-sandbox-v3-architecture.jpg)
 
 The local `inventory.ini` is replaced by the `amazon.aws.aws_ec2` plugin. The plugin queries the AWS
 API at runtime and builds inventory from EC2 tags. Instance replacements are reflected
@@ -111,22 +115,23 @@ infrastructure.
 installed from `collections/requirements.yml` at workflow runtime.
 
 OIDC authentication is used to assume an AWS IAM role. No long-lived credentials are stored as
-repository secrets.
+repository secrets. This setup exists despite there being no action ran against live infrastructure, but exists to show a functional and secure pattern.
 
 ---
 
-## 🚀 Deployment
+## 🚀 Deployment (for v2 or v3)
 
 ```bash
 # Assumes valid AWS credentials are configured in your environment
 # Export AWS_PROFILE=your-profile or use instance profile / env vars
-# Provision the state backend (once)
-cd v2-remote-state-ssm/bootstrap-ansible-linux-sandbox
+# Provision the state backend (once) if completing
+cd v2-remote-state-ssm/bootstrap-ansible-linux-sandbox # or update to v3
 terraform init && terraform apply
 
 # Main infrastructure
 cd ..
 terraform init
+terraform plan # recommended to save an output file
 terraform apply
 
 # Wait at least five to ten minutes for instances to come online; this could probably be automated with SSM somehow
